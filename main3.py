@@ -1,9 +1,9 @@
 import cv2
 import numpy as np
 
-#Felosztjuk kézzel egyenletesen és utána eltüntetjük a porisat HSV-vel és utána a felosztáson megnézzük hol nem maradt valami mert a toll fekete.
-def find_rectangles(gray_image):
 
+# Felosztjuk kézzel egyenletesen és utána eltüntetjük a porisat HSV-vel és utána a felosztáson megnézzük hol nem maradt valami mert a toll fekete.
+def find_rectangles(gray_image):
     canny = cv2.Canny(gray_image, 50, 150)
 
     contours, _ = cv2.findContours(canny, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -16,65 +16,77 @@ def find_rectangles(gray_image):
 
     return squares
 
-def divide_image(playing_field, num_divisions):
 
+def divide_image(playing_field):
     pixels = 3
     height, width = playing_field.shape[:2]
     cropped_image = playing_field[pixels:height - pixels, pixels:width - pixels]
 
-    cv2.imshow("field", cropped_image)
-    cv2.waitKey(0)
-
     height, width = cropped_image.shape[:2]
-    # Calculate the dimensions of each piece
-    piece_height = height // num_divisions
-    piece_width = width // num_divisions
+    piece_height = height // 9
+    piece_width = width // 10
 
     pieces = []
-    for i in range(num_divisions - 1):
-        for j in range(num_divisions):
-            # Calculate the starting and ending coordinates of the piece
+    for i in range(9):
+        for j in range(10):
             start_y = i * piece_height
             end_y = start_y + piece_height
             start_x = j * piece_width
             end_x = start_x + piece_width
 
-            # Extract the piece from the image
             piece = cropped_image[start_y:end_y, start_x:end_x]
             pieces.append(piece)
 
-            # Process or save each piece as needed
-            # For example, you can display the piece
-            cv2.imshow(f"Piece {i*num_divisions+j+1}", piece)
-            cv2.waitKey(0)
-            cv2.destroyAllWindows()
-    print("pices", len(pieces))
     return pieces
 
-img = cv2.imread('5v.bmp')
+
+def check_filled(square):
+    height, width = square.shape[:2]
+    white = np.ones((height, width, 3), dtype=np.uint8) * 255
+
+    hsv = cv2.cvtColor(square, cv2.COLOR_BGR2HSV)
+
+    lower_range = np.array([0, 0, 0])
+    upper_range = np.array([100, 200, 30])
+
+    mask = cv2.inRange(hsv, lower_range, upper_range)
+
+    result = cv2.copyTo(white, mask)
+    return cv2.countNonZero(cv2.cvtColor(result, cv2.COLOR_BGR2GRAY)) > 30
 
 
-blurred_img = cv2.GaussianBlur(img, (5, 5), 0)
+def main():
+    img = cv2.imread('5vk.bmp')
 
-winname = "Test"
-cv2.namedWindow(winname)        # Create a named window
-cv2.moveWindow(winname, 40, 30)  # Move it to (40,30)
+    cv2.imshow("Szelvény", img)
 
-gray = cv2.cvtColor(blurred_img, cv2.COLOR_BGR2GRAY)
-cv2.imshow(winname, gray)
-cv2.waitKey(0)
+    blurred_img = cv2.GaussianBlur(img, (5, 5), 0)
+    gray = cv2.cvtColor(blurred_img, cv2.COLOR_BGR2GRAY)
+    playing_field_contours = find_rectangles(gray)
+    playing_fields = []
 
-squares = find_rectangles(gray)
+    for i, contour in enumerate(playing_field_contours):
+        x, y, w, h = cv2.boundingRect(contour)
+        cropped_image = img[y:y + h, x:x + w]
+        playing_fields.append(cropped_image)
 
-contour_images = []
+    for i, playing_filed in enumerate(playing_fields[::-1]):
+        print(f'Játék: {i + 1}:')
+        played_numbers = []
+        for j, square in enumerate(divide_image(playing_filed)):
+            if check_filled(square):
+                played_numbers.append(j + 1)
+        number_of_played_fields = len(played_numbers)
+        if number_of_played_fields > 5:
+            print(f'Érvénytelen túl sok mező: {number_of_played_fields}:')
+        if number_of_played_fields < 5:
+            print(f'Érvénytelen túl kevés mező: {number_of_played_fields}:')
+        if number_of_played_fields == 5:
+            print(f'Érvényes megjátszott számok: {played_numbers}:')
 
-for i, contour in enumerate(squares):
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 
-    x, y, w, h = cv2.boundingRect(contour)
-    cropped_image = img[y:y + h, x:x + w]
-    contour_images.append(cropped_image)
 
-divide_image(contour_images[-1], 10)
-
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+if __name__ == "__main__":
+    main()
