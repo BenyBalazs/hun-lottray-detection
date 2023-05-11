@@ -16,32 +16,48 @@ def find_rectangles(gray_image):
 
     return squares
 
-def find_playing_fields(gray_image):
+def divide_image(image, num_divisions):
+    height, width, _ = image.shape
 
-    # cv2.imshow("asd", gray_image)
+    # Calculate the dimensions of each piece
+    piece_height = height // num_divisions
+    piece_width = width // num_divisions
 
-    kernel = np.array([[0, 1, 0], [1, -4, 1], [0, 1, 0]])
-    dilate_kernel = np.ones((1, 1), np.uint8)
+    pieces = []
+    for i in range(num_divisions):
+        for j in range(num_divisions):
+            # Calculate the starting and ending coordinates of the piece
+            start_y = i * piece_height
+            end_y = start_y + piece_height
+            start_x = j * piece_width
+            end_x = start_x + piece_width
 
-    sharpened = cv2.filter2D(gray_image, -1, kernel)
-    img_dilation = cv2.erode(sharpened, dilate_kernel, iterations=30)
+            # Extract the piece from the image
+            piece = image[start_y:end_y, start_x:end_x]
+            pieces.append(piece)
 
-    bs = cv2.GaussianBlur(img_dilation, (5, 5), 0)
+            # Process or save each piece as needed
+            # For example, you can display the piece
+            cv2.imshow(f"Piece {i*num_divisions+j+1}", piece)
+            cv2.waitKey(0)
+            cv2.destroyAllWindows()
 
-    _, thresh = cv2.threshold(bs, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+    return pieces
 
-    contours, _ = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+# Load the image
+image = cv2.imread("your_image.jpg")
 
-    squares = []
-    for c in contours:
-        approx = cv2.approxPolyDP(c, 0.04 * cv2.arcLength(c, True), True)
-        if len(approx) == 4 and 200 < cv2.contourArea(approx) < 1000:
-            squares.append(approx)
+# Divide the image into 4 equal-sized pieces
+num_divisions = 2
+divided_pieces = divide_image(image, num_divisions)
+In this example, the image is divided into num_divisions x num_divisions equal-sized pieces. You can modify the code according to your specific requirements, such as the number of divisions or the file path of the image you want to process.
 
-    for f, cnt in enumerate(squares[::-1]):
-        check_mark(cnt, gray_image)
 
-    return squares
+
+
+
+
+
 
 def check_mark(cnt, gray_square):
 
