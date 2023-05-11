@@ -74,16 +74,19 @@ squares = find_rectangles(gray)
 
 contour_images = []
 
-
 for i, contour in enumerate(squares):
 
     mask = np.zeros_like(img)
-
     cv2.drawContours(mask, [contour], -1, (255, 255, 255), cv2.FILLED)
-
     result = cv2.bitwise_and(img, mask)
 
-    contour_images.append(result)
+    x, y, w, h = cv2.boundingRect(contour)
+    cropped_image = img[y:y + h, x:x + w]
+
+    cv2.imshow("asdasd", cropped_image)
+    cv2.waitKey(0)
+
+    contour_images.append(cropped_image)
 
 print(len(contour_images))
 for i, cimage in enumerate(contour_images[::-1]):

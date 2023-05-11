@@ -16,15 +16,22 @@ def find_rectangles(gray_image):
 
     return squares
 
-def divide_image(image, num_divisions):
-    height, width, _ = image.shape
+def divide_image(playing_field, num_divisions):
 
+    pixels = 3
+    height, width = playing_field.shape[:2]
+    cropped_image = playing_field[pixels:height - pixels, pixels:width - pixels]
+
+    cv2.imshow("field", cropped_image)
+    cv2.waitKey(0)
+
+    height, width = cropped_image.shape[:2]
     # Calculate the dimensions of each piece
     piece_height = height // num_divisions
     piece_width = width // num_divisions
 
     pieces = []
-    for i in range(num_divisions):
+    for i in range(num_divisions - 1):
         for j in range(num_divisions):
             # Calculate the starting and ending coordinates of the piece
             start_y = i * piece_height
@@ -33,7 +40,7 @@ def divide_image(image, num_divisions):
             end_x = start_x + piece_width
 
             # Extract the piece from the image
-            piece = image[start_y:end_y, start_x:end_x]
+            piece = cropped_image[start_y:end_y, start_x:end_x]
             pieces.append(piece)
 
             # Process or save each piece as needed
@@ -41,37 +48,8 @@ def divide_image(image, num_divisions):
             cv2.imshow(f"Piece {i*num_divisions+j+1}", piece)
             cv2.waitKey(0)
             cv2.destroyAllWindows()
-
+    print("pices", len(pieces))
     return pieces
-
-# Load the image
-image = cv2.imread("your_image.jpg")
-
-# Divide the image into 4 equal-sized pieces
-num_divisions = 2
-divided_pieces = divide_image(image, num_divisions)
-In this example, the image is divided into num_divisions x num_divisions equal-sized pieces. You can modify the code according to your specific requirements, such as the number of divisions or the file path of the image you want to process.
-
-
-
-
-
-
-
-
-def check_mark(cnt, gray_square):
-
-    zero_like = np.zeros_like(gray_square)
-    # Apply the mask to the input image
-    cv2.drawContours(zero_like, [cnt], 0, (255, 255, 255), -1)
-    canvas = cv2.bitwise_and(gray_square, zero_like)
-
-    #mask2 = cv2.inRange(img, 0, 0)
-    #masked = cv2.bitwise_and(canvas, canvas, mask=mask2)
-    #cv2.imshow(f'Contour a', canvas)
-    #cv2.waitKey(0)
-
-    return np.count_nonzero(canvas) == 0
 
 img = cv2.imread('5v.bmp')
 
@@ -90,25 +68,13 @@ squares = find_rectangles(gray)
 
 contour_images = []
 
-
 for i, contour in enumerate(squares):
 
-    mask = np.zeros_like(img)
+    x, y, w, h = cv2.boundingRect(contour)
+    cropped_image = img[y:y + h, x:x + w]
+    contour_images.append(cropped_image)
 
-    cv2.drawContours(mask, [contour], -1, (255, 255, 255), cv2.FILLED)
-
-    result = cv2.bitwise_and(img, mask)
-
-    contour_images.append(result)
-
-print(len(contour_images))
-for i, cimage in enumerate(contour_images[::-1]):
-    playing_fileds = find_playing_fields(cv2.cvtColor(cimage, cv2.COLOR_BGR2GRAY))
-    print(len(playing_fileds))
-    cv2.drawContours(cimage,
-                     playing_fileds,
-                     -1, (0, 255, 0), 3)
-    cv2.imshow(f'Contour {i}', cimage)
+divide_image(contour_images[-1], 10)
 
 cv2.waitKey(0)
 cv2.destroyAllWindows()
